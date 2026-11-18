@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111318">
+  <title>Controle de Escalas</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <section class="login-wrap" id="loginView" aria-labelledby="loginTitle">
+    <form class="login-card" id="loginForm">
+      <span class="eyebrow">GESTÃO DA EQUIPE</span>
+      <h1 id="loginTitle">Controle de Escalas</h1>
+      <p>Entre para organizar a equipe e as folgas.</p>
+      <label for="loginEmail">E-mail</label>
+      <input id="loginEmail" name="email" type="email" autocomplete="username" required>
+      <label for="loginPassword">Senha</label>
+      <input id="loginPassword" name="senha" type="password" autocomplete="current-password" required>
+      <button class="primary full" type="submit">Entrar</button>
+      <p class="feedback" id="loginMessage" role="status"></p>
+    </form>
+  </section>
+
+  <div id="appView" hidden>
+    <header class="app-header">
+      <a class="brand" href="#escala">Controle <span>de Escalas</span></a>
+      <nav aria-label="Navegação principal">
+        <button class="nav-button active" data-section="escala">Escala</button>
+        <button class="nav-button" data-section="funcionarios">Funcionários</button>
+      </nav>
+      <button id="logoutButton" class="quiet">Sair</button>
+    </header>
+
+    <main>
+      <section id="escalaSection" class="panel-section">
+        <div class="page-heading">
+          <div><span class="eyebrow">LANCHERIA</span><h1>Escala semanal</h1><p>Distribuição da equipe por dia e função.</p></div>
+          <div class="week-control">
+            <label for="weekStart">Semana a partir de segunda</label>
+            <input id="weekStart" type="date">
+            <button id="generateButton" class="primary">Gerar escala</button>
+          </div>
+        </div>
+        <div class="notice" id="scheduleMessage" role="status">Cadastre a equipe para preparar uma escala.</div>
+        <div class="schedule-grid" id="scheduleGrid"></div>
+      </section>
+
+      <section id="funcionariosSection" class="panel-section" hidden>
+        <div class="page-heading">
+          <div><span class="eyebrow">EQUIPE</span><h1>Funcionários</h1><p>Cadastre as pessoas e suas funções. A escala distribui os dias de trabalho.</p></div>
+        </div>
+        <div class="employee-layout">
+          <form class="card employee-form" id="employeeForm">
+            <h2>Novo funcionário</h2>
+            <label for="employeeName">Nome</label>
+            <input id="employeeName" name="nome" maxlength="120" required placeholder="Nome completo">
+            <label for="employeeRole">Função</label>
+            <select id="employeeRole" name="cargo" required>
+              <option value="" selected disabled>Selecione uma função</option>
+              <option>Chapista</option>
+              <option>Auxiliar de chapista</option>
+              <option>Auxiliar de cozinha</option>
+              <option>Caixa</option>
+              <option>Atendente</option>
+            </select>
+            <button class="primary" type="submit">Cadastrar funcionário</button>
+            <p class="feedback" id="employeeMessage" role="status"></p>
+          </form>
+          <div class="card employee-list-card">
+            <div class="list-heading"><h2>Equipe cadastrada</h2><span id="employeeCount" class="count">0</span></div>
+            <div id="employeeList" class="employee-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
