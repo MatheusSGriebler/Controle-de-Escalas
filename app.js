@@ -1,6 +1,7 @@
 const API = String(window.CONTROLE_ESCALA_API || "http://localhost:3000").replace(/\/$/, "");
 const tokenKey = "controle_escala_token";
 let token = sessionStorage.getItem(tokenKey);
+let scheduleForPrint = null;
 const $ = (id) => document.getElementById(id);
 const weekdays = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"];
 
@@ -25,6 +26,9 @@ function showApp() {
 function signOut() {
   token = null;
   sessionStorage.removeItem(tokenKey);
+  scheduleForPrint = null;
+  $("printArea").replaceChildren();
+  $("exportPdfButton").disabled = true;
   $("appView").hidden = true;
   $("loginView").hidden = false;
 }
@@ -119,9 +123,13 @@ async function loadSchedule() {
   const message = $("scheduleMessage");
   const start = $("weekStart").value;
   if (!start) return;
+  scheduleForPrint = null;
+  $("exportPdfButton").disabled = true;
+  preparePrintSchedule(null);
   try {
     const data = await api(`/api/escalas?inicioSemana=${encodeURIComponent(start)}`);
     renderSchedule(data.dias);
+    preparePrintSchedule(data.dias);
     message.textContent = data.escala.status === "publicada" ? "Escala publicada." : "Rascunho da escala.";
   } catch (error) {
     renderSchedule();
@@ -165,6 +173,103 @@ function renderSchedule(days = []) {
 }
 renderSchedule();
 
+function formatIsoDate(value, options = { day: "2-digit", month: "2-digit", year: "numeric" }) {
+  if (!value) return "";
+  const [year, month, day] = value.split("-").map(Number);
+  return new Intl.DateTimeFormat("pt-BR", options).format(new Date(year, month - 1, day));
+}
+
+function preparePrintSchedule(days) {
+  const printArea = $("printArea");
+  printArea.replaceChildren();
+  if (!Array.isArray(days) || days.length !== 7) {
+    scheduleForPrint = null;
+    $("exportPdfButton").disabled = true;
+    return;
+  }
+
+  scheduleForPrint = days;
+  $("exportPdfButton").disabled = false;
+
+  const heading = document.createElement("header");
+  heading.className = "print-heading";
+  const title = document.createElement("h1");
+  title.textContent = "Escala semanal";
+  const dateRange = document.createElement("p");
+  dateRange.textContent = `${formatIsoDate(days[0].data, { day: "2-digit", month: "long", year: "numeric" })} a ${formatIsoDate(days[6].data, { day: "2-digit", month: "long", year: "numeric" })}`;
+  heading.append(title, dateRange);
+
+  const table = document.createElement("table");
+  table.className = "print-table";
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  const employeeHeader = document.createElement("th");
+  employeeHeader.scope = "col";
+  employeeHeader.textContent = "Funcionário";
+  headerRow.append(employeeHeader);
+  days.forEach((day, index) => {
+    const th = document.createElement("th");
+    th.scope = "col";
+    th.textContent = `${weekdays[index]} ${formatIsoDate(day.data, { day: "2-digit", month: "2-digit" })}`;
+    headerRow.append(th);
+  });
+  thead.append(headerRow);
+  table.append(thead);
+
+  const employees = new Map();
+  days.forEach((day, dayIndex) => {
+    day.funcionarios.forEach((person) => {
+      if (!employees.has(person.id)) {
+        employees.set(person.id, { nome: person.nome, cargo: person.cargo, dias: Array(7).fill(null) });
+      }
+      employees.get(person.id).dias[dayIndex] = {
+        tipo: person.tipo,
+        cargoCoberto: person.cargoCoberto,
+      };
+    });
+  });
+
+  const tbody = document.createElement("tbody");
+  [...employees.entries()]
+    .sort(([, left], [, right]) => left.cargo.localeCompare(right.cargo, "pt-BR") || left.nome.localeCompare(right.nome, "pt-BR"))
+    .forEach(([, employee]) => {
+      const row = document.createElement("tr");
+      const nameCell = document.createElement("th");
+      nameCell.scope = "row";
+      nameCell.className = "print-employee";
+      const name = document.createElement("strong");
+      name.textContent = employee.nome;
+      const role = document.createElement("small");
+      role.textContent = employee.cargo;
+      nameCell.append(name, role);
+      row.append(nameCell);
+
+      employee.dias.forEach((assignment) => {
+        const cell = document.createElement("td");
+        if (!assignment || assignment.tipo === "folga") {
+          cell.textContent = "Folga";
+          cell.className = "print-rest";
+        } else {
+          cell.textContent = assignment.cargoCoberto || "Trabalho";
+          cell.className = "print-work";
+        }
+        row.append(cell);
+      });
+      tbody.append(row);
+    });
+
+  table.append(tbody);
+  printArea.append(heading, table);
+}
+
+$("exportPdfButton").addEventListener("click", () => {
+  if (!scheduleForPrint) return;
+  const previousTitle = document.title;
+  document.title = `Escala-semanal-${$("weekStart").value}`;
+  window.addEventListener("afterprint", () => { document.title = previousTitle; }, { once: true });
+  window.print();
+});
+
 $("generateButton").addEventListener("click", async () => {
   const button = $("generateButton");
   const message = $("scheduleMessage");
@@ -177,6 +282,7 @@ $("generateButton").addEventListener("click", async () => {
     });
     message.textContent = data.avisos?.length ? data.avisos.join(" ") : "Rascunho da escala gerado.";
     renderSchedule(data.dias);
+    preparePrintSchedule(data.dias);
   } catch (error) { message.textContent = error.message; }
   finally { button.disabled = false; }
 });

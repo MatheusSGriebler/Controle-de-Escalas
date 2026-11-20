@@ -26,6 +26,9 @@
 
   <div id="appView" hidden>
     <header class="app-header">
+       <div id="logo">
+            <a href="oficinalanches.com"><img src="logo.png" alt="Oficina lanches"></a>
+        </div>
       <a class="brand" href="#escala">Controle <span>de Escalas</span></a>
       <nav aria-label="Navegação principal">
         <button class="nav-button active" data-section="escala">Escala</button>
@@ -42,6 +45,7 @@
             <label for="weekStart">Semana a partir de segunda</label>
             <input id="weekStart" type="date">
             <button id="generateButton" class="primary">Gerar escala</button>
+            <button id="exportPdfButton" class="secondary" type="button" disabled>Salvar como PDF</button>
           </div>
         </div>
         <div class="notice" id="scheduleMessage" role="status">Cadastre a equipe para preparar uma escala.</div>
@@ -76,6 +80,7 @@
         </div>
       </section>
     </main>
+    <section id="printArea" class="print-area" aria-label="Escala preparada para impressão"></section>
   </div>
 </body>
 </html>
